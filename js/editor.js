@@ -421,6 +421,14 @@
   //  Eingabe: Markdown-Kürzel, [[ Autovervollständigung, / Befehle
   // ======================================================================
   function onInput(tab, e) {
+    tab.content.querySelectorAll('span[data-zw]').forEach(sp => {
+      if (sp.textContent.length > 1 && sp.textContent.includes('\u200b')) {
+        const sel = getSelection(); const keep = sel.rangeCount ? sel.getRangeAt(0) : null;
+        const w = document.createTreeWalker(sp, NodeFilter.SHOW_TEXT);
+        for (let t; (t = w.nextNode());) { const i = t.data.indexOf('\u200b'); if (i >= 0 && t.data.length > 1) { const atEnd = keep && keep.startContainer === t; const off = keep ? keep.startOffset : 0; t.deleteData(i, 1); if (atEnd) { const nr = document.createRange(); nr.setStart(t, Math.max(0, Math.min(t.length, off > i ? off - 1 : off))); nr.collapse(true); sel.removeAllRanges(); sel.addRange(nr); } } }
+        delete sp.dataset.zw;
+      }
+    });
     const cr = caret();
     if (!cr || !cr.node) { closeEdPop(); return; }
     // [[Name]] direkt getippt -> Link
@@ -596,13 +604,34 @@
     document.execCommand('formatBlock', false, tag);
     Ed.active && markDirty(Ed.active); updateToolbarState();
   }
+  // Nur Cursor (nichts markiert): ab hier mit neuer Größe/Schrift weiterschreiben – wie in Word
+  function styleAtCaret(prop, val) {
+    const sel = getSelection(); if (!sel.rangeCount) return false;
+    const r = sel.getRangeAt(0); if (!r.collapsed) return false;
+    let span = r.startContainer.nodeType === 3 ? r.startContainer.parentElement : r.startContainer;
+    // Leerer Stil-Span von eben? Dann nur den Wert ändern
+    if (!(span && span.dataset && span.dataset.zw !== undefined && span.textContent === '\u200b')) {
+      span = h('span', { data: { zw: '' } }, '\u200b');
+      r.insertNode(span);
+    }
+    span.style.setProperty(prop, val);
+    const nr = document.createRange(); nr.setStart(span.firstChild, 1); nr.collapse(true);
+    sel.removeAllRanges(); sel.addRange(nr);
+    markDirty(Ed.active); updateToolbarState();
+    return true;
+  }
   function setFontSize(px) {
+    if (styleAtCaret('font-size', px + 'px')) return;
     document.execCommand('styleWithCSS', false, true);
     document.execCommand('fontSize', false, '7');
     const c = Ed.active.content;
     c.querySelectorAll('[style*="xxx-large"]').forEach(e => e.style.fontSize = px + 'px');
     c.querySelectorAll('font[size="7"]').forEach(f => { const s = h('span', { style: { fontSize: px + 'px' } }); s.append(...f.childNodes); f.replaceWith(s); });
-    markDirty(Ed.active);
+    markDirty(Ed.active); updateToolbarState();
+  }
+  function setFont(f) {
+    if (styleAtCaret('font-family', f.css)) return;
+    exec('fontName', f.id);
   }
   const cmd = {
     checklist(force) {
@@ -843,8 +872,8 @@
     const B = (icon, title, run, extra = '') => h('button.tool' + extra, { title, html: SN.icon(icon, 17), onmousedown: (e) => { e.preventDefault(); run(e); }, data: { cmd: icon } });
     const S = () => h('div.tb-sep');
     const blockBtn = h('button.tool.drop', { title: 'Absatzformat', html: `<span id="tb-block">Text</span>${SN.icon('chev-d', 14)}`, onmousedown: (e) => { e.preventDefault(); SN.menuAt(blockBtn, BLOCKS.map(b => ({ label: b.label, icon: b.icon, onClick: () => { refocus(); formatBlock(b.tag); } }))); } });
-    const fontBtn = h('button.tool.drop', { title: 'Schriftart', html: `<span>Schrift</span>${SN.icon('chev-d', 14)}`, onmousedown: (e) => { e.preventDefault(); const r = saveSel(); SN.menuAt(fontBtn, FONTS.map(f => ({ label: f.label, icon: 'type', onClick: () => { restoreSel(r); exec('fontName', f.id); } }))); } });
-    const sizeBtn = h('button.tool.drop.sm', { title: 'Schriftgröße', html: `<span>Größe</span>${SN.icon('chev-d', 14)}`, onmousedown: (e) => { e.preventDefault(); const r = saveSel(); SN.menuAt(sizeBtn, SIZES.map(s => ({ label: s + ' px', icon: 'type', onClick: () => { restoreSel(r); setFontSize(s); } }))); } });
+    const fontBtn = h('button.tool.drop', { title: 'Schriftart', html: `<span id="tb-font">Schrift</span>${SN.icon('chev-d', 14)}`, onmousedown: (e) => { e.preventDefault(); const r = saveSel(); SN.menuAt(fontBtn, FONTS.map(f => ({ label: f.label, icon: $('#tb-font')?.textContent === f.label.split(' (')[0] ? 'check' : 'type', onClick: () => { restoreSel(r); setFont(f); } }))); } });
+    const sizeBtn = h('button.tool.drop.sm', { title: 'Schriftgröße', html: `<span id="tb-size">Größe</span>${SN.icon('chev-d', 14)}`, onmousedown: (e) => { e.preventDefault(); const r = saveSel(); SN.menuAt(sizeBtn, SIZES.map(s => ({ label: s + ' px', icon: $('#tb-size')?.textContent === s + ' px' ? 'check' : 'type', onClick: () => { restoreSel(r); setFontSize(s); } }))); } });
     const colorBtn = h('button.tool.tool-color', { title: 'Textfarbe', html: `${SN.icon('type', 16)}<span class="bar" style="background:var(--accent)"></span>`, onmousedown: (e) => { e.preventDefault(); const r = saveSel(); SN.colorPop(colorBtn, COLORS, (c) => { restoreSel(r); if (c) exec('foreColor', c); else exec('removeFormat'); colorBtn.querySelector('.bar').style.background = c || 'var(--accent)'; }); } });
     const hlBtn = h('button.tool.tool-color', { title: 'Markieren (Strg+Umschalt+H)', html: `${SN.icon('highlight', 16)}<span class="bar" style="background:var(--accent2)"></span>`, onmousedown: (e) => { e.preventDefault(); const r = saveSel(); SN.colorPop(hlBtn, HILITES, (c) => { restoreSel(r); exec('hiliteColor', c || 'transparent'); }); } });
     const alignBtn = h('button.tool', { title: 'Ausrichtung', html: SN.icon('align-l', 17) + SN.icon('chev-d', 12), onmousedown: (e) => { e.preventDefault(); SN.menuAt(alignBtn, [
@@ -894,6 +923,17 @@
     const tag = blk ? (blk.closest('h1,h2,h3,h4,blockquote,pre')?.tagName || 'P') : 'P';
     const lab = BLOCKS.find(b => b.tag === tag)?.label || 'Text';
     const el = $('#tb-block'); if (el) el.textContent = lab;
+    // Aktuelle Schriftgröße & Schriftart am Cursor anzeigen
+    const sel = getSelection();
+    let node = sel.rangeCount && Ed.active.content.contains(sel.anchorNode) ? sel.anchorNode : null;
+    if (node && node.nodeType === 3) node = node.parentElement;
+    const sz = $('#tb-size'), fn = $('#tb-font');
+    if (node) {
+      const cs = getComputedStyle(node);
+      if (sz) sz.textContent = Math.round(parseFloat(cs.fontSize)) + ' px';
+      const fam = cs.fontFamily.split(',')[0].replace(/['"]/g, '').trim();
+      if (fn) fn.textContent = (FONTS.find(f => f.id.toLowerCase() === fam.toLowerCase())?.label.split(' (')[0]) || fam || 'Schrift';
+    }
   }
 
   function noteMenu(anchor) {

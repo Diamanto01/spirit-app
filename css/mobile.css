@@ -233,3 +233,4 @@ body.mobile .hist-wrap { grid-template-columns: 1fr; height: auto; }
 body.mobile .hist-list { flex-direction: row; overflow-x: auto; border-right: 0; padding: 0 0 8px; border-bottom: 1px solid var(--line); }
 body.mobile .hist-item { flex: none; }
 body.mobile .hist-preview { max-height: 45dvh; }
+body.mobile #pop-root .ctx:not(.color-pop) { max-height: 52vh; overflow-y: auto; overscroll-behavior: contain; }

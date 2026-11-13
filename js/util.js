@@ -140,6 +140,7 @@ SN.confirm = (title, text, { danger, ok = 'OK' } = {}) => new Promise(res => {
 
 // ---------- Kontextmenü / Popups ----------
 SN.closePops = () => SN.$$('#pop-root > .ctx').forEach(e => e.remove());
+const popOpened = () => { SN._popOpening = true; setTimeout(() => { SN._popOpening = false; }, 0); };
 SN.ctxMenu = (e, items) => {
   e.preventDefault(); e.stopPropagation();
   SN.closePops();
@@ -153,14 +154,14 @@ SN.ctxMenu = (e, items) => {
       onclick: (ev) => { ev.stopPropagation(); SN.closePops(); it.onClick && it.onClick(); }
     }));
   }
-  SN.$('#pop-root').append(m);
+  SN.$('#pop-root').append(m); popOpened();
   const x = e.clientX ?? e.x, y = e.clientY ?? e.y;
   const r = m.getBoundingClientRect();
   m.style.left = Math.min(x, innerWidth - r.width - 8) + 'px';
   m.style.top = Math.min(y, innerHeight - r.height - 8) + 'px';
 };
 SN.menuAt = (anchor, items) => { const r = anchor.getBoundingClientRect(); SN.ctxMenu({ preventDefault() {}, stopPropagation() {}, clientX: r.left, clientY: r.bottom + 4 }, items); };
-document.addEventListener('mousedown', (e) => { if (!e.target.closest('.ctx')) SN.closePops(); });
+document.addEventListener('mousedown', (e) => { if (!SN._popOpening && !e.target.closest('.ctx')) SN.closePops(); });
 window.addEventListener('blur', () => SN.closePops());
 
 // ---------- Farbwähler-Popup ----------
@@ -173,7 +174,7 @@ SN.colorPop = (anchor, colors, onPick, { allowNone = true } = {}) => {
   m.append(grid);
   const custom = SN.h('input', { type: 'color', value: '#e11d48', oninput: (e) => onPick(e.target.value) });
   m.append(SN.h('label.color-custom', SN.ico('palette', 14), 'Eigene Farbe', custom));
-  SN.$('#pop-root').append(m);
+  SN.$('#pop-root').append(m); popOpened();
   const r = anchor.getBoundingClientRect();
   m.style.left = Math.min(r.left, innerWidth - 230) + 'px'; m.style.top = r.bottom + 6 + 'px';
 };
