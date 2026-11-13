@@ -27,7 +27,7 @@
     await SN.loadSettings();
     SN.themes.apply();
     $('.tb-logo-icon').innerHTML = SN.themes.logoSVG(24);
-    if (!SN.isElectron && 'serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+    swInit();
     if (!SN.isElectron && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     await SN.sync.load();
     // Handy: Einrichtung über den QR-Code-Link (#setup=…)
@@ -305,6 +305,33 @@
       pending.add(f);
     }
     if (pending.size) flushExternal();
+  }
+
+  // ---------- Handy-App: neue Versionen automatisch laden ----------
+  function swInit() {
+    if (SN.isElectron || !('serviceWorker' in navigator) || (location.protocol !== 'https:' && location.hostname !== 'localhost')) return;
+    const hadCtl = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+      const check = () => reg.update().catch(() => {});
+      // iOS holt Apps oft nur aus dem Hintergrund zurück -> dann auch nach Updates schauen
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+      setInterval(check, 20 * 60 * 1000);
+    }).catch(() => {});
+    let pending = false;
+    const reload = async () => {
+      if (SN.sync.running) return setTimeout(reload, 1000);
+      try { await SN.editor.saveAll(); await Promise.all(Object.values(SN.data).map(s => s.flush())); } catch (e) { void e; }
+      location.reload();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadCtl || pending) return;
+      pending = true;
+      const a = document.activeElement;
+      const busy = (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) || document.querySelector('.modal-back');
+      if (!busy) { SN.toast('Neue Version von Spirit Notes wird geladen …', 'info', 3000); setTimeout(reload, 700); return; }
+      SN.toast('Neue Version bereit – hier tippen zum Neuladen', 'level', 15000, reload);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) reload(); }, { once: true });
+    });
   }
 
   // ---------- Beim Schließen alles speichern ----------

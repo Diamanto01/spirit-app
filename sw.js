@@ -1,5 +1,5 @@
 /* Spirit Notes – Service Worker: App läuft auch offline */
-const CACHE = 'spirit-notes-1.2.0';
+const CACHE = 'spirit-notes-1.2.1';
 const ASSETS = [
     "./",
     "css/app.css",
@@ -53,8 +53,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET' || u.origin !== self.location.origin) return;
-  // Netzwerk zuerst (immer aktuell), sonst aus dem Cache (offline)
-  e.respondWith(fetch(e.request).then(r => {
+  // Netzwerk zuerst (immer aktuell, am Browser-Cache vorbei), sonst aus dem Cache (offline)
+  e.respondWith(fetch(e.request.url, { cache: 'no-cache' }).then(r => {
     if (r && r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
     return r;
   }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(r => r || caches.match('./index.html'))));
