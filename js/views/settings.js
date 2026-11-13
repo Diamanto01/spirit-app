@@ -21,7 +21,9 @@
     const themes = h('div.theme-grid');
     for (const [id, t] of Object.entries(SN.themes.list)) {
       const v = t.vars;
-      themes.append(h('div.theme-card' + (s.theme === id ? '.on' : ''), { onclick: () => { set({ theme: id, accent: '' }); V.render(); } },
+      const lock = SN.rewards.lockedTheme(id);
+      themes.append(h('div.theme-card' + (s.theme === id ? '.on' : '') + (lock ? '.locked' : ''), { onclick: () => { if (lock) { SN.toast(`„${t.name}“ ist eine Belohnung für Level ${lock.lvl}`, 'info'); return; } set({ theme: id, accent: '' }); V.render(); } },
+        lock ? h('span.tc-lock', { html: `${SN.icon('trophy', 13)} Lv ${lock.lvl}` }) : null,
         h('div.tc-prev', { style: { background: `radial-gradient(circle at 80% 120%, ${v.accent}55, transparent 60%), linear-gradient(160deg, ${v.bg2}, ${v.bg})` } },
           h('div.tc-side', { style: { background: v.panel, borderColor: v.line } }), h('div.tc-lines', h('i', { style: { background: v.accent } }), h('i', { style: { background: v.accent2 } }), h('i', { style: { background: v.muted } })),
           h('div.tc-dot', { style: { background: v.accent, boxShadow: `0 0 14px ${v.accent}` } })),
@@ -29,7 +31,7 @@
     }
     body.append(h('div.card.ornate.set-card', h('div.card-title', { html: `${SN.icon('palette', 16)} Design & Theme` }), themes,
       row('Eigene Akzentfarbe', 'Überschreibt die Hauptfarbe des Themes.', h('div.row', h('input', { type: 'color', value: s.accent || SN.themes.list[s.theme]?.vars.accent || '#e11d48', oninput: (e) => set({ accent: e.target.value }) }), h('button.btn.small', { onclick: () => { set({ accent: '' }); V.render(); } }, 'Zurücksetzen'))),
-      row('Partikel', 'Fallende Blüten, Funken, Schnee …', sel('particles', [['auto', 'Passend zum Theme'], ['petals', 'Rosenblätter'], ['sakura', 'Sakura-Blüten'], ['sparkles', 'Sterne'], ['snow', 'Schnee'], ['embers', 'Funken'], ['off', 'Aus']])),
+      row('Partikel', 'Fallende Blüten, Funken, Schnee …', sel('particles', [['auto', 'Passend zum Theme'], ['petals', 'Rosenblätter'], ['sakura', 'Sakura-Blüten'], ['sparkles', 'Sterne'], ['snow', 'Schnee'], ['embers', 'Funken'], ...[['gears', 'Zahnräder ✦'], ['shooting', 'Sternschnuppen ✦'], ['feathers', 'Federn ✦'], ['hearts', 'Herzen ✦']].filter(([v]) => !SN.rewards.lockedParticles(v)), ['off', 'Aus']])),
       row('Partikel-Menge', null, h('input', { type: 'range', min: .3, max: 2.5, step: .1, value: s.particleDensity, style: { width: '220px' }, onchange: (e) => set({ particleDensity: +e.target.value }) })),
       sw('motif', 'Hintergrund-Motiv', 'Große, langsam drehende Uhr / Siegel im Hintergrund.'),
       row('Größe der Oberfläche', null, sel('uiScale', [[0.9, 'Klein'], [1, 'Normal'], [1.1, 'Groß'], [1.2, 'Sehr groß']]))));

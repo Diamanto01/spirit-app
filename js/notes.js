@@ -135,7 +135,7 @@
     const tpl = document.createElement('template'); tpl.innerHTML = html;
     const tasks = Array.from(tpl.content.querySelectorAll('ul.checklist > li')).map(li => ({ text: li.textContent.trim().replace(/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]+))?\]\]/g, (_, t, a) => a || t), done: li.dataset.checked === 'true' })).filter(t => t.text);
     const headings = Array.from(tpl.content.querySelectorAll('h1,h2,h3')).map(h => ({ level: +h.tagName[1], text: h.textContent.trim() })).filter(h => h.text);
-    const img = tpl.content.querySelector('img');
+    const img = tpl.content.querySelector('img:not(.sticker)');
     const cleanText = plain.replace(WIKI_RE, (_, t, h, a) => a || t).replace(/\s+/g, ' ').trim();
     return {
       path, name: SN.noteName(path), folder: SN.dirname(path),

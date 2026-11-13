@@ -56,10 +56,11 @@
     const today = SN.stats.day();
     const goal = SN.settings.dailyGoal || 500;
     const stats = h('div.home-stats',
-      h('div.card.level-card', { onclick: () => V.levelInfo() },
-        h('div.level-ring', { html: ring(lv.pct, 74, `<tspan class="lv-n">${lv.lvl}</tspan>`) }),
+      h('div.card.level-card', { onclick: () => SN.app.show('rewards') },
+        h('div.level-ring', { html: SN.rewards.ring(74, lv.pct, `<b>${lv.lvl}</b>`) }),
         h('div', h('div.lv-title', lv.title), h('div.faint', { style: { fontSize: '12px' } }, `${SN.fmtNum(lv.xp)} XP · noch ${SN.fmtNum(lv.next - lv.xp)} bis Lv. ${lv.lvl + 1}`),
-          h('div.lv-streak', { html: `${SN.icon('flame', 15)} <b>${streak}</b> ${streak === 1 ? 'Tag' : 'Tage'} Streak` }))),
+          h('div.lv-streak', { html: `${SN.icon('flame', 15)} <b>${streak}</b> ${streak === 1 ? 'Tag' : 'Tage'} Streak` }),
+          SN.rewards.ready().length ? h('div.rw-pill.hot', { style: { marginTop: '6px', whiteSpace: 'nowrap' }, title: 'Belohnungen einsammeln', html: `${SN.icon('trophy', 13)} ${SN.rewards.ready().length} bereit!` }) : null)),
       stat('file', SN.fmtNum(notes.length), 'Notizen'),
       stat('feather', SN.fmtNum(totalWords), 'Wörter im Vault'),
       stat('tv', SN.fmtNum(anime.length), 'Anime in der Liste'),

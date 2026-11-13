@@ -2,7 +2,7 @@
 (() => {
   const A = SN.app = { view: null };
   const $ = SN.$, h = SN.h;
-  const VIEWS = ['home', 'notes', 'overview', 'graph', 'planner', 'anime', 'gallery', 'settings'];
+  const VIEWS = ['home', 'notes', 'overview', 'graph', 'planner', 'anime', 'gallery', 'settings', 'rewards'];
 
   // ---------- Zuletzt geöffnet ----------
   SN.recent = {
@@ -64,6 +64,7 @@
     await SN.stats.load();
     await SN.views.planner.init();
     await SN.views.anime.init();
+    await SN.rewards.init();
     if (SN.fs.preloadBlobs) await SN.fs.preloadBlobs();
     // Erster Start mit Sync: zuerst alles vom anderen Gerät holen
     if (SN.sync.cfg && !(await SN.fs.exists('.spirit/sync-state.json'))) {
@@ -82,12 +83,25 @@
     await SN.editor.restoreTabs();
     A.show(VIEWS.includes(SN.settings.lastView) ? SN.settings.lastView : 'home');
     renderLevel(true);
+    // Beim Start auf offene Belohnungen hinweisen (z. B. nach dem Update auf Level 4)
+    setTimeout(() => { const n = SN.rewards.ready().length; if (n) SN.toast(`✦ ${n === 1 ? 'Eine Belohnung wartet' : n + ' Belohnungen warten'} auf dich – hier tippen zum Einsammeln!`, 'level', 9000, () => A.show('rewards')); }, 2200);
     SN.on('stats', SN.debounce(() => renderLevel(), 300));
     SN.fs.onChanged && SN.fs.onChanged(onExternalChange);
     SN.focus.update();
     SN.sync.start();
     SN.sync.setState(SN.sync.state);
     if (SN.sync.cfg) setTimeout(() => SN.sync.run(), SN.isElectron ? 3000 : 600);
+    SN.on('rewards', () => { renderLevel(); if (A.view === 'rewards') SN.rewards.render(); if (A.view === 'home') SN.views.home.render(); });
+    // Neue Programmversion -> Handy-App auf GitHub automatisch mit aktualisieren
+    if (SN.isElectron && SN.sync.cfg && SN.sync.cfg.appRepo) setTimeout(async () => {
+      try {
+        const v = await window.spirit.version();
+        if (SN.settings.appPublished === v) return;
+        const r = await SN.sync.publishApp();
+        SN.saveSettings({ appPublished: v });
+        SN.toast(`Handy-App auf GitHub aktualisiert (Version ${v}) ✦` + (r.manual ? ' – GitHub Pages bitte noch einschalten' : ''), 'ok', 5000);
+      } catch (e) { console.warn('Handy-App aktualisieren', e); }
+    }, 8000);
   }
 
   // ======================================================================
@@ -113,10 +127,10 @@
     SN.$$('#activity .act').forEach(b => b.onclick = () => A.show(b.dataset.view));
     $('#tb-search').onclick = () => SN.palette.open();
     $('#tb-zen').onclick = () => A.zen();
-    $('#tb-theme').onclick = (e) => SN.menuAt(e.currentTarget, [{ header: 'Theme' }, ...Object.entries(SN.themes.list).map(([id, t]) => ({ label: (SN.settings.theme === id ? '✦ ' : '') + t.name, icon: 'palette', onClick: () => { SN.saveSettings({ theme: id, accent: '' }); SN.themes.apply(); if (A.view === 'settings') SN.views.settings.render(); } })), { sep: true }, { label: 'Alle Einstellungen', icon: 'settings', onClick: () => A.show('settings') }]);
+    $('#tb-theme').onclick = (e) => SN.menuAt(e.currentTarget, [{ header: 'Theme' }, ...Object.entries(SN.themes.list).filter(([id]) => !SN.rewards.lockedTheme(id)).map(([id, t]) => ({ label: (SN.settings.theme === id ? '✦ ' : '') + t.name, icon: 'palette', onClick: () => { SN.saveSettings({ theme: id, accent: '' }); SN.themes.apply(); if (A.view === 'settings') SN.views.settings.render(); } })), { sep: true }, { label: 'Alle Einstellungen', icon: 'settings', onClick: () => A.show('settings') }]);
     $('#tb-timer').onclick = () => { A.show('planner'); SN.views.planner.tab('focus'); };
     $('#tb-sync').onclick = () => { if (SN.sync.state === 'error' && SN.sync.error) SN.toast(SN.sync.error, 'err', 6000); SN.sync.run({ silent: false }); };
-    $('#act-level').onclick = () => SN.views.home.levelInfo();
+    $('#act-level').onclick = () => A.show('rewards');
     SN.$$('.rp-tabs button').forEach(b => b.onclick = () => SN.editor.setRight(b.dataset.rp));
     document.body.append(h('button.btn.zen-exit', { html: SN.icon('minimize', 15) + '<span>Zen beenden (Esc)</span>', onclick: () => A.zen(false) }));
     document.addEventListener('keydown', onKey);
@@ -138,7 +152,7 @@
     if (SN.isElectron) window.spirit.win.fullscreen(now).catch(() => {});
     if (now) SN.toast('Zen-Modus – nur du und deine Worte. Esc zum Beenden.', 'info', 2200);
   };
-  A.cycleTheme = () => { const ids = Object.keys(SN.themes.list); const i = ids.indexOf(SN.settings.theme); SN.saveSettings({ theme: ids[(i + 1) % ids.length], accent: '' }); SN.themes.apply(); SN.toast('Theme: ' + SN.themes.list[SN.settings.theme].name); };
+  A.cycleTheme = () => { const ids = Object.keys(SN.themes.list).filter(id => !SN.rewards.lockedTheme(id)); const i = ids.indexOf(SN.settings.theme); SN.saveSettings({ theme: ids[(i + 1) % ids.length], accent: '' }); SN.themes.apply(); SN.toast('Theme: ' + SN.themes.list[SN.settings.theme].name); };
   A.searchTag = (t) => { SN.views.overview.filterTag(t); A.show('overview'); };
   A.openExternal = (url) => { if (SN.isElectron) window.spirit.openExternal(url); else window.open(url, '_blank'); };
 
@@ -147,9 +161,11 @@
   function renderLevel(initial) {
     const lv = SN.stats.level();
     const r = 20, c = 2 * Math.PI * r;
-    $('#act-level').innerHTML = `<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="${r}" fill="none" stroke="var(--line)" stroke-width="3"/><circle cx="24" cy="24" r="${r}" fill="none" stroke="var(--accent2)" stroke-width="3" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - lv.pct)}" transform="rotate(-90 24 24)" style="filter:drop-shadow(0 0 4px var(--glow2))"/></svg><span>${lv.lvl}</span>`;
-    $('#act-level').title = `Spirit-Level ${lv.lvl} – ${lv.title}\n${SN.fmtNum(lv.xp)} XP`;
-    if (!initial && lastLvl != null && lv.lvl > lastLvl) { SN.sound('level'); SN.toast(`Level Up! Du bist jetzt Level ${lv.lvl} – „${lv.title}“ ✦`, 'level', 5000); }
+    void r; void c;
+    const ready = SN.rewards.ready().length;
+    $('#act-level').innerHTML = SN.rewards.ring(46, lv.pct, `<b>${lv.lvl}</b>`, 'small') + (ready ? `<em class="rw-badge">${ready}</em>` : '');
+    $('#act-level').title = `Spirit-Level ${lv.lvl} – ${lv.title}\n${SN.fmtNum(lv.xp)} XP` + (ready ? `\n${ready} Belohnung(en) bereit!` : '\nBelohnungen ansehen');
+    if (!initial && lastLvl != null && lv.lvl > lastLvl) { SN.sound('level'); SN.toast(`Level Up! Du bist jetzt Level ${lv.lvl} – „${lv.title}“ ✦`, 'level', 5000); SN.rewards.levelUp(lv.lvl); }
     lastLvl = lv.lvl;
   }
 

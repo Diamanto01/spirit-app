@@ -563,6 +563,7 @@
     { id: 'link', label: 'Link zu Notiz', sub: '[[ ]]', icon: 'wikilink', kw: 'link notiz verbinden wiki', run: () => document.execCommand('insertText', false, '[[') },
     { id: 'date', label: 'Datum heute', icon: 'calendar', kw: 'datum heute date', run: () => document.execCommand('insertText', false, SN.fmtDate(new Date())) },
     { id: 'time', label: 'Uhrzeit', icon: 'clock', kw: 'zeit uhr time', run: () => document.execCommand('insertText', false, SN.fmtTime(new Date())) },
+    { id: 'sticker', label: 'Sticker', sub: 'Belohnungs-Sticker einfügen', icon: 'trophy', kw: 'sticker emblem belohnung bild deko', run: () => Ed.stickerPicker() },
     { id: 'toc', label: 'Inhaltsverzeichnis', icon: 'list', kw: 'inhalt verzeichnis toc', run: () => cmd.toc() },
     { group: 'Boxen' },
     { id: 'info', label: 'Info-Box', icon: 'info', kw: 'info box callout', run: () => cmd.callout('info') },
@@ -687,6 +688,28 @@
     clear() { exec('removeFormat'); const b = currentBlock(Ed.active.content); if (b && /^H\d|BLOCKQUOTE|PRE$/.test(b.tagName)) formatBlock('P'); },
   };
   Ed.cmd = cmd;
+  // ---------- Sticker (Level-Belohnung) ----------
+  Ed.stickerPicker = () => {
+    const tab = Ed.active; if (!tab) return;
+    const ids = SN.rewards.stickers();
+    if (!ids.length) { SN.toast('Sticker schaltest du ab Level 2 frei – schau bei den Belohnungen!', 'info', 4000); return; }
+    const sel = getSelection(); const saved = sel.rangeCount && tab.content.contains(sel.anchorNode) ? sel.getRangeAt(0).cloneRange() : null;
+    const r = caretRect() || tab.content.getBoundingClientRect();
+    SN.closePops();
+    const pop = h('div.ctx.sticker-pop', h('div.ctx-head', 'Sticker einfügen'));
+    const grid = h('div.sticker-grid');
+    for (const id of ids) grid.append(h('button.sticker-btn', { title: SN.rewards.STICKERS[id].name, onmousedown: (e) => {
+      e.preventDefault(); SN.closePops();
+      tab.content.focus(); if (saved) { const s = getSelection(); s.removeAllRanges(); s.addRange(saved); }
+      document.execCommand('insertHTML', false, `<img class="sticker" src="${SN.rewards.stickerUrl(id)}" alt="${SN.esc(SN.rewards.STICKERS[id].name)}">&nbsp;`);
+      markDirty(tab); SN.sound('pop');
+    } }, h('img', { src: SN.rewards.stickerUrl(id), alt: '' })));
+    pop.append(grid);
+    $('#pop-root').append(pop);
+    const pr = pop.getBoundingClientRect();
+    pop.style.left = SN.clamp(r.left, 8, innerWidth - pr.width - 8) + 'px';
+    pop.style.top = (r.bottom + pr.height + 10 > innerHeight ? r.top - pr.height - 6 : r.bottom + 6) + 'px';
+  };
   function selectNode(id) {
     const el = document.getElementById(id); if (!el) return;
     el.removeAttribute('id');
@@ -846,7 +869,7 @@
       alignBtn, B('list', 'Aufzählung', () => cmd.list('ul')), B('list-ol', 'Nummerierte Liste', () => cmd.list('ol')), B('list-check', 'Checkliste (Strg+Umschalt+C)', () => cmd.checklist()),
       B('outdent', 'Einzug verkleinern', () => exec('outdent')), B('indent', 'Einzug vergrößern', () => exec('indent')), S(),
       B('link', 'Web-Link (Strg+K)', () => cmd.link()), B('wikilink', 'Notiz verlinken [[ ]]', () => { refocus(); document.execCommand('insertText', false, '[['); onInput(Ed.active); }),
-      B('image', 'Bild einfügen', () => cmd.image()), B('table', 'Tabelle', () => { refocus(); cmd.table(); }), B('hr', 'Trennlinie', () => { refocus(); cmd.hr(); }), boxBtn,
+      B('image', 'Bild einfügen', () => cmd.image()), B('table', 'Tabelle', () => { refocus(); cmd.table(); }), B('hr', 'Trennlinie', () => { refocus(); cmd.hr(); }), boxBtn, B('trophy', 'Sticker (Belohnung)', () => { refocus(); Ed.stickerPicker(); }),
       B('eraser', 'Formatierung entfernen', () => cmd.clear()),
       h('div.tb-right',
         B('search', 'Suchen & Ersetzen (Strg+F)', () => Ed.find()),

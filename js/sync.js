@@ -285,7 +285,8 @@
     return res;
   };
   async function afterApply(paths) {
-    for (const [name, st] of [['planner', SN.data.planner], ['anime', SN.data.anime], ['stats', SN.stats.store]]) if (st && paths.includes(`.spirit/${name}.json`)) await st.load();
+    for (const [name, st] of [['planner', SN.data.planner], ['anime', SN.data.anime], ['stats', SN.stats.store], ['rewards', SN.data.rewards]]) if (st && paths.includes(`.spirit/${name}.json`)) await st.load();
+    if (paths.includes('.spirit/rewards.json') && SN.rewards) SN.rewards.applyEquipped();
     if (paths.includes(SHARED_FILE)) await applyShared();
     if (SN.fs.preloadBlobs) await SN.fs.preloadBlobs();
     await SN.notes.build();
@@ -460,6 +461,7 @@
         try {
           const r = await S.publishApp((t) => lab.textContent = t);
           lab.textContent = 'Handy-App aktualisieren';
+          window.spirit.version().then(v => SN.saveSettings({ appPublished: v }));
           SN.modal({ title: SN.icon('smartphone', 20) + ' Handy-App ist online', width: 560, body: `<p>Deine App ist unter <b>${SN.esc(r.url)}</b> erreichbar${r.uploaded ? ` (${r.uploaded} Dateien hochgeladen)` : ''}. GitHub braucht beim ersten Mal 1–2 Minuten, bis die Seite da ist.</p>${r.manual ? `<div class="callout-mini">${SN.icon('alert', 15)} GitHub Pages musst du einmal selbst einschalten: Öffne <a href="${r.settingsUrl}" target="_blank">${SN.esc(r.settingsUrl)}</a> → bei <b>Branch</b> „main“ und „/ (root)“ wählen → <b>Save</b>.</div>` : ''}<p>Danach: <b>„iPhone verbinden“</b> klicken und den QR-Code scannen.</p>`, buttons: [{ label: 'iPhone verbinden', primary: true, onClick: (c) => { c(); S.pairModal(); } }, { label: 'Schließen' }] });
         } catch (e) { SN.toast('Veröffentlichen fehlgeschlagen: ' + e.message, 'err', 9000); lab.textContent = 'Handy-App veröffentlichen'; }
         pub.disabled = false;

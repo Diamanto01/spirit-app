@@ -86,12 +86,14 @@ SN.hydrateIcons = (root = document) => SN.$$('.ico[data-i]', root).forEach(e => 
 SN.ico = (name, size) => SN.h('span.ico', { html: SN.icon(name, size) });
 
 // ---------- Toasts ----------
-SN.toast = (msg, type = 'info', ms = 2600) => {
+SN.toast = (msg, type = 'info', ms = 2600, onclick) => {
   const icons = { info: 'sparkles', ok: 'check', warn: 'alert', err: 'x-circle', level: 'trophy' };
   const t = SN.h('div.toast.' + type, { html: `${SN.icon(icons[type] || 'sparkles', 18)}<span>${SN.esc(msg)}</span>` });
+  if (onclick) { t.classList.add('clickable'); t.onclick = () => { onclick(); t.classList.remove('in'); setTimeout(() => t.remove(), 400); }; }
   SN.$('#toast-root').append(t);
   requestAnimationFrame(() => t.classList.add('in'));
   setTimeout(() => { t.classList.remove('in'); setTimeout(() => t.remove(), 400); }, ms);
+  return t;
 };
 
 // ---------- Modal ----------

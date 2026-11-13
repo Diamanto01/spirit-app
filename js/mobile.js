@@ -28,7 +28,7 @@
 
   // ---------- Navigation unten ----------
   const MAIN = [['home', 'home', 'Home'], ['notes', 'feather', 'Notizen'], ['planner', 'calendar', 'Planer'], ['anime', 'tv', 'Anime']];
-  const MORE = [['overview', 'table', 'Übersicht / Datenbank'], ['graph', 'graph', 'Graph'], ['gallery', 'image', 'Galerie'], ['settings', 'settings', 'Einstellungen']];
+  const MORE = [['rewards', 'trophy', 'Belohnungen'], ['overview', 'table', 'Übersicht / Datenbank'], ['graph', 'graph', 'Graph'], ['gallery', 'image', 'Galerie'], ['settings', 'settings', 'Einstellungen']];
   function buildNav() {
     const nav = h('nav#mnav');
     for (const [v, i, l] of MAIN) nav.append(h('button.mn', { data: { view: v }, onclick: () => {
