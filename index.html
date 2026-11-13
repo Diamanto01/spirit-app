@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0709">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Spirit Notes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' vault: data: blob:; img-src 'self' vault: data: blob: https: http:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; connect-src 'self' vault: https: data: blob:; manifest-src 'self'; worker-src 'self'; media-src 'self' vault: data: blob:">
+<title>Spirit Notes</title>
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/editor.css">
+<link rel="stylesheet" href="css/views.css">
+<link rel="stylesheet" href="css/mobile.css">
+</head>
+<body class="theme-crimson booting">
+  <div id="bg-image"></div>
+  <div id="bg-motif"></div>
+  <canvas id="particles"></canvas>
+
+  <div id="app">
+    <header id="titlebar">
+      <div class="tb-logo" title="Spirit Notes">
+        <span class="tb-logo-icon"></span>
+        <span class="tb-logo-text">Spirit <b>Notes</b></span>
+      </div>
+      <button class="tb-search" id="tb-search">
+        <span class="ico" data-i="search"></span>
+        <span>Suchen, öffnen oder Befehl …</span>
+        <kbd>Strg P</kbd>
+      </button>
+      <div class="tb-flex"></div>
+      <div class="tb-timer hidden" id="tb-timer" title="Chronos-Fokus läuft"></div>
+      <button class="tb-btn tb-sync hidden" id="tb-sync" title="Synchronisieren"></button>
+      <button class="tb-btn" id="tb-zen" title="Zen-Modus (F11)"><span class="ico" data-i="maximize"></span></button>
+      <button class="tb-btn" id="tb-theme" title="Theme wechseln"><span class="ico" data-i="palette"></span></button>
+      <div class="tb-wc-space"></div>
+    </header>
+
+    <div id="main">
+      <nav id="activity">
+        <button class="act" data-view="home" title="Home (Strg 1)"><span class="ico" data-i="home"></span><small>Home</small></button>
+        <button class="act" data-view="notes" title="Notizen (Strg 2)"><span class="ico" data-i="feather"></span><small>Notizen</small></button>
+        <button class="act" data-view="overview" title="Übersicht / Datenbank"><span class="ico" data-i="table"></span><small>Übersicht</small></button>
+        <button class="act" data-view="graph" title="Graph-Ansicht (Strg G)"><span class="ico" data-i="graph"></span><small>Graph</small></button>
+        <button class="act" data-view="planner" title="Planer"><span class="ico" data-i="calendar"></span><small>Planer</small></button>
+        <button class="act" data-view="anime" title="Anime"><span class="ico" data-i="tv"></span><small>Anime</small></button>
+        <button class="act" data-view="gallery" title="Galerie"><span class="ico" data-i="image"></span><small>Galerie</small></button>
+        <div class="act-flex"></div>
+        <div class="act-level" id="act-level" title="Spirit-Level"></div>
+        <button class="act" data-view="settings" title="Einstellungen"><span class="ico" data-i="settings"></span><small>Setup</small></button>
+      </nav>
+
+      <div id="views">
+        <section class="view" id="view-home"></section>
+
+        <section class="view" id="view-notes">
+          <aside id="sidebar">
+            <div class="sb-head">
+              <div class="sb-title">Notizen</div>
+              <div class="sb-actions">
+                <button class="icon-btn" id="sb-new" title="Neue Notiz (Strg N)"><span class="ico" data-i="file-plus"></span></button>
+                <button class="icon-btn" id="sb-template" title="Neue Notiz aus Vorlage"><span class="ico" data-i="sparkles"></span></button>
+                <button class="icon-btn" id="sb-folder" title="Neuer Ordner"><span class="ico" data-i="folder-plus"></span></button>
+                <button class="icon-btn" id="sb-daily" title="Tagesnotiz (Strg D)"><span class="ico" data-i="sun"></span></button>
+                <button class="icon-btn" id="sb-more" title="Mehr"><span class="ico" data-i="more"></span></button>
+              </div>
+            </div>
+            <div class="sb-filter"><span class="ico" data-i="search"></span><input id="sb-filter" placeholder="Notizen filtern …" spellcheck="false"></div>
+            <div class="sb-scroll">
+              <div class="sb-section" id="sb-pinned-wrap">
+                <div class="sb-sec-title"><span class="ico" data-i="pin"></span> Favoriten</div>
+                <div id="sb-pinned"></div>
+              </div>
+              <div class="sb-section">
+                <div class="sb-sec-title"><span class="ico" data-i="folder"></span> Vault <span class="sb-count" id="sb-count"></span></div>
+                <div id="sb-tree" class="tree"></div>
+              </div>
+              <div class="sb-section">
+                <div class="sb-sec-title collapsible" id="sb-tags-toggle"><span class="ico" data-i="tag"></span> Tags</div>
+                <div id="sb-tags" class="tag-cloud"></div>
+              </div>
+            </div>
+          </aside>
+
+          <div id="editor-area">
+            <div id="tabs-bar"></div>
+            <div id="toolbar"></div>
+            <div id="findbar" class="hidden"></div>
+            <div id="pages">
+              <div id="ed-empty" class="ed-empty"></div>
+            </div>
+            <div id="statusbar"></div>
+          </div>
+
+          <aside id="rightpanel">
+            <div class="rp-tabs">
+              <button data-rp="outline" class="on" title="Gliederung"><span class="ico" data-i="list"></span></button>
+              <button data-rp="links" title="Backlinks"><span class="ico" data-i="link"></span></button>
+              <button data-rp="local" title="Lokaler Graph"><span class="ico" data-i="graph"></span></button>
+              <button data-rp="info" title="Info & Statistik"><span class="ico" data-i="info"></span></button>
+            </div>
+            <div class="rp-body" id="rp-body"></div>
+          </aside>
+        </section>
+
+        <section class="view" id="view-overview"></section>
+        <section class="view" id="view-graph"></section>
+        <section class="view" id="view-planner"></section>
+        <section class="view" id="view-anime"></section>
+        <section class="view" id="view-gallery"></section>
+        <section class="view" id="view-settings"></section>
+      </div>
+    </div>
+  </div>
+
+  <div id="welcome" class="hidden"></div>
+  <div id="modal-root"></div>
+  <div id="pop-root"></div>
+  <div id="toast-root"></div>
+
+  <script src="vendor/marked.umd.js"></script>
+  <script src="vendor/qrcode.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/notes.js"></script>
+  <script src="js/themes.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/graph.js"></script>
+  <script src="js/views/home.js"></script>
+  <script src="js/views/overview.js"></script>
+  <script src="js/views/planner.js"></script>
+  <script src="js/views/anime.js"></script>
+  <script src="js/views/gallery.js"></script>
+  <script src="js/views/settings.js"></script>
+  <script src="js/palette.js"></script>
+  <script src="js/sync.js"></script>
+  <script src="js/mobile.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
