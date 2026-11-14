@@ -322,6 +322,7 @@
       const t = this.store.value.totals; t[field] = (t[field] || 0) + n;
       this.store.save();
       SN.emit('stats');
+      SN.emit('bump', field, n);
     },
     streak() {
       let s = 0; const d = new Date();

@@ -69,6 +69,8 @@
         h('div.goal-ring', { html: ring(Math.min(1, today.words / goal), 54, `<tspan class="g-n">${Math.min(999, Math.round(today.words / goal * 100))}%</tspan>`) }),
         h('div', h('b', `${SN.fmtNum(today.words)} / ${SN.fmtNum(goal)}`), h('span', 'Wörter heute'))));
     wrap.append(stats);
+    const comp = SN.companion && SN.companion.homeCard && SN.companion.homeCard();
+    if (comp) wrap.append(comp);
 
     // ---------- Raster ----------
     const grid = h('div.home-grid');

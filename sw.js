@@ -1,8 +1,9 @@
 /* Spirit Notes – Service Worker: App läuft auch offline */
-const CACHE = 'spirit-notes-1.3.0';
+const CACHE = 'spirit-notes-1.4.0';
 const ASSETS = [
     "./",
     "css/app.css",
+    "css/companion.css",
     "css/editor.css",
     "css/fonts.css",
     "css/mobile.css",
@@ -36,6 +37,9 @@ const ASSETS = [
     "js/util.js",
     "js/views/anime.js",
     "js/views/discover.js",
+    "js/companion/art.js",
+    "js/companion/lines.js",
+    "js/views/companion.js",
     "js/views/gallery.js",
     "js/views/home.js",
     "js/views/overview.js",

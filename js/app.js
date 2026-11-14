@@ -2,7 +2,7 @@
 (() => {
   const A = SN.app = { view: null };
   const $ = SN.$, h = SN.h;
-  const VIEWS = ['home', 'notes', 'overview', 'graph', 'planner', 'anime', 'gallery', 'settings', 'rewards'];
+  const VIEWS = ['home', 'notes', 'overview', 'graph', 'planner', 'anime', 'gallery', 'settings', 'rewards', 'companion'];
 
   // ---------- Zuletzt geöffnet ----------
   SN.recent = {
@@ -65,6 +65,7 @@
     await SN.views.planner.init();
     await SN.views.anime.init();
     await SN.rewards.init();
+    await SN.companion.init();
     if (SN.fs.preloadBlobs) await SN.fs.preloadBlobs();
     // Erster Start mit Sync: zuerst alles vom anderen Gerät holen
     if (SN.sync.cfg && !(await SN.fs.exists('.spirit/sync-state.json'))) {

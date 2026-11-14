@@ -27,7 +27,7 @@
   };
 
   // ---------- Navigation unten ----------
-  const MAIN = [['home', 'home', 'Home'], ['notes', 'feather', 'Notizen'], ['planner', 'calendar', 'Planer'], ['anime', 'tv', 'Anime']];
+  const MAIN = [['home', 'home', 'Home'], ['notes', 'feather', 'Notizen'], ['planner', 'calendar', 'Planer'], ['companion', 'heart', 'Freundin'], ['anime', 'tv', 'Anime']];
   const MORE = [['rewards', 'trophy', 'Belohnungen'], ['overview', 'table', 'Übersicht / Datenbank'], ['graph', 'graph', 'Graph'], ['gallery', 'image', 'Galerie'], ['settings', 'settings', 'Einstellungen']];
   function buildNav() {
     const nav = h('nav#mnav');
