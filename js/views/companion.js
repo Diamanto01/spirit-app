@@ -367,7 +367,7 @@
     const box = $('.cp-fx'); if (!box) return;
     const sym = { love: ['♥', '#ff5c93'], sparkle: ['✦', '#ffd45c'], note: ['♪', '#ffffff'], anger: ['💢', ''], tear: ['💧', ''], zzz: ['Z', '#c7d2fe'], shock: ['❗', ''], bubble: ['○', '#bfe9ff'], food: ['', ''] }[kind] || ['✦', '#fff'];
     for (let i = 0; i < n; i++) {
-      const s = h('span.cp-p.' + kind, { style: { left: (30 + Math.random() * 40) + '%', top: (kind === 'bubble' ? 30 + Math.random() * 50 : 2 + Math.random() * 26) + '%', color: sym[1] || null, animationDelay: (i * 0.12) + 's', fontSize: (16 + Math.random() * 14) + 'px' } }, sym[0]);
+      const s = h('span.cp-p.' + kind, { style: { left: (26 + Math.random() * 48) + '%', top: (kind === 'bubble' ? 30 + Math.random() * 45 : 6 + Math.random() * 24) + '%', color: sym[1] || null, animationDelay: (i * 0.12) + 's', fontSize: (16 + Math.random() * 14) + 'px' } }, sym[0]);
       box.append(s); setTimeout(() => s.remove(), 2200 + i * 120);
     }
   }
@@ -399,7 +399,7 @@
     const r = el.querySelector('svg').getBoundingClientRect();
     const y = (e.clientY - r.top) / r.height;
     if (g.asleep) { say('sleep_talk'); fx('zzz', 2); return; }
-    if (y < 0.36) {
+    if (y < 0.3) {
       // Kopf streicheln
       g.pats = (g.pats || []).filter(t => Date.now() - t < 20000); g.pats.push(Date.now());
       el.classList.remove('patted'); void el.offsetWidth; el.classList.add('patted');
@@ -488,7 +488,7 @@
     const draw = () => {
       body.innerHTML = '';
       const prev = h('div.cp-ward-prev', { html: A().girl(store.value.active, { expr: 'happy', outfit: g.outfit, acc: g.acc }) });
-      const outfits = Object.entries(A().OUTFITS).filter(([k]) => k !== 'pajama').map(([k, n]) => [k, { n, svg: A().girl(store.value.active, { expr: 'neutral', outfit: k }).replace('viewBox="0 0 300 400"', 'viewBox="80 230 140 170"') }]);
+      const outfits = Object.entries(A().OUTFITS).filter(([k]) => k !== 'pajama').map(([k, n]) => [k, { n, svg: A().girl(store.value.active, { expr: 'neutral', outfit: k }).replace('viewBox="0 0 600 800"', `viewBox="${A().BODY_BOX}"`) }]);
       const accs = Object.entries(A().ACC).filter(([k]) => ACC_P[k]).map(([k, n]) => [k, { n, svg: A().face(store.value.active, 'neutral', { acc: [k] }) }]);
       body.append(h('div.cp-ward', prev, h('div.cp-ward-lists',
         h('h4', 'Outfits'), shopGrid(outfits, (k) => buy('outfit_' + k, OUTFIT_P[k], () => { g.outfit = k; }), { owned: (k) => k === d.outfit || store.value.owned['outfit_' + k] || !OUTFIT_P[k], equipped: (k) => g.outfit === k, priceOf: (k) => OUTFIT_P[k] }),

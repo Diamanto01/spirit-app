@@ -1,5 +1,5 @@
 /* Spirit Notes – Service Worker: App läuft auch offline */
-const CACHE = 'spirit-notes-1.4.0';
+const CACHE = 'spirit-notes-1.4.1';
 const ASSETS = [
     "./",
     "css/app.css",
