@@ -285,7 +285,8 @@
     return res;
   };
   async function afterApply(paths) {
-    for (const [name, st] of [['planner', SN.data.planner], ['anime', SN.data.anime], ['stats', SN.stats.store], ['rewards', SN.data.rewards]]) if (st && paths.includes(`.spirit/${name}.json`)) await st.load();
+    // alle Datenspeicher neu laden, die sich geändert haben (Planer, Anime, Belohnungen, Entdecken, …)
+    for (const st of new Set([...Object.values(SN.data), SN.stats.store])) if (st && st.path && paths.includes(st.path)) await st.load();
     if (paths.includes('.spirit/rewards.json') && SN.rewards) SN.rewards.applyEquipped();
     if (paths.includes(SHARED_FILE)) await applyShared();
     if (SN.fs.preloadBlobs) await SN.fs.preloadBlobs();

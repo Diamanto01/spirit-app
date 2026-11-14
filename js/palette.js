@@ -23,6 +23,8 @@
     { label: 'Zen-Modus', icon: 'maximize', kbd: 'F11', run: () => SN.app.zen() },
     { label: 'Theme wechseln', icon: 'palette', run: () => SN.app.cycleTheme() },
     { label: 'Belohnungen öffnen', icon: 'trophy', run: () => SN.app.show('rewards') },
+    { label: 'Anime entdecken (suchen & Infos lesen)', icon: 'compass', run: () => SN.views.anime.showTab('discover') },
+    { label: 'Anime stöbern – was schaue ich als Nächstes?', icon: 'scroll', run: () => { SN.views.anime.showTab('discover'); SN.discover.feed(); } },
     ...Object.entries(SN.themes.list).filter(([id]) => !SN.rewards.lockedTheme(id)).map(([id, t]) => ({ label: 'Theme: ' + t.name, icon: 'palette', run: () => { SN.saveSettings({ theme: id, accent: '' }); SN.themes.apply(); } })),
     { label: 'Seitenleiste ein/aus', icon: 'sidebar-l', run: () => SN.app.toggleSidebar() },
     { label: 'Rechte Leiste ein/aus', icon: 'sidebar-r', run: () => SN.app.toggleRight() },

@@ -12,7 +12,9 @@
   const TIERS = [['S', '#f43f5e'], ['A', '#f97316'], ['B', '#facc15'], ['C', '#34d399'], ['D', '#38bdf8'], ['F', '#a78bfa']];
   const GENRE_DE = { Action: 'Action', Adventure: 'Abenteuer', Comedy: 'Komödie', Drama: 'Drama', Fantasy: 'Fantasy', Romance: 'Romanze', 'Sci-Fi': 'Sci-Fi', 'Slice of Life': 'Slice of Life', Mystery: 'Mystery', Horror: 'Horror', Sports: 'Sport', Supernatural: 'Übernatürlich', Suspense: 'Spannung', Psychological: 'Psycho', Mecha: 'Mecha', Music: 'Musik', 'Award Winning': 'Preisgekrönt', Ecchi: 'Ecchi', Gourmet: 'Essen', 'Boys Love': 'Boys Love', 'Girls Love': 'Girls Love', Harem: 'Harem', School: 'Schule', Isekai: 'Isekai', Military: 'Militär', Historical: 'Historisch', 'Martial Arts': 'Kampfkunst', Mythology: 'Mythologie', 'Time Travel': 'Zeitreise', 'Super Power': 'Superkräfte', Vampire: 'Vampire', Idols: 'Idols' };
 
-  V.init = async () => { store = SN.data.anime = new SN.Store('anime', { list: [] }); await store.load(); };
+  V.init = async () => { store = SN.data.anime = new SN.Store('anime', { list: [] }); await store.load(); await SN.discover.init(); };
+  V.STATUS = STATUS; V.GENRE_DE = GENRE_DE;
+  V.showTab = (t) => { ui.tab = t; localStorage.setItem('sn-an-tab', t); if (SN.app.view !== 'anime') SN.app.show('anime'); else V.render(); };
   V.list = () => store ? store.value.list : [];
   const save = () => { store.save(); SN.emit('anime'); };
   const cover = (a) => a.cover ? SN.fs.url(a.cover) : '';
@@ -23,14 +25,15 @@
     const root = $('#view-anime');
     root.innerHTML = '';
     const col = h('div.view-col');
-    const seg = h('div.seg', ...[['list', 'grid', 'Meine Liste'], ['tier', 'trophy', 'Tier-Liste'], ['stats', 'chart', 'Statistik']].map(([k, i, l]) =>
+    const seg = h('div.seg', ...[['discover', 'compass', 'Entdecken'], ['list', 'grid', 'Meine Liste'], ['tier', 'trophy', 'Tier-Liste'], ['stats', 'chart', 'Statistik']].map(([k, i, l]) =>
       h('button' + (ui.tab === k ? '.on' : ''), { html: SN.icon(i, 14) + l, onclick: () => { ui.tab = k; localStorage.setItem('sn-an-tab', k); V.render(); } })));
-    col.append(h('div.view-head', h('div', h('h2.view-title', { html: 'Anime <span class="jp">アニメ</span>' }), h('div.view-sub', 'Deine Watchlist – bewerten, ranken, festhalten.')), h('div.spacer'), seg,
+    col.append(h('div.view-head', h('div', h('h2.view-title', { html: 'Anime <span class="jp">アニメ</span>' }), h('div.view-sub', ui.tab === 'discover' ? 'Suchen, Infos lesen, stöbern – finde deinen nächsten Anime.' : 'Deine Watchlist – bewerten, ranken, festhalten.')), h('div.spacer'), seg,
       h('button.btn.primary', { html: SN.icon('plus', 16) + '<span>Anime hinzufügen</span>', onclick: () => V.add() })), h('div.deco-line'));
     const body = h('div.an-body');
     col.append(body);
     root.append(col);
-    if (ui.tab === 'list') renderList(body);
+    if (ui.tab === 'discover') SN.discover.render(body);
+    else if (ui.tab === 'list') renderList(body);
     else if (ui.tab === 'tier') renderTier(body);
     else renderStats(body);
   };
@@ -146,6 +149,7 @@
   const TYPE_DE = { TV: 'TV', TV_SHORT: 'TV', Movie: 'Film', MOVIE: 'Film', movie: 'Film', OVA: 'OVA', ova: 'OVA', ONA: 'ONA', ona: 'ONA', Special: 'Special', SPECIAL: 'Special', special: 'Special', TV_Special: 'Special', Music: 'Special', MUSIC: 'Special', music: 'Special', tv: 'TV' };
   const de = (g) => GENRE_DE[g] || g;
   const stripHtml = (t) => String(t || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim();
+  V.getJSON = getJSON;
   async function getJSON(url, opts = {}) {
     if (SN.isElectron) return window.spirit.net.request({ url, ...opts });
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 10000);
@@ -187,6 +191,16 @@
     store.value.list.unshift(a); save();
     return a;
   }
+  // Aus „Entdecken“ übernehmen (ohne Detail-Fenster)
+  V.addFromMedia = (n, status = 'plan') => {
+    const type = { 'TV-Kurz': 'TV', Musik: 'Special' }[n.format] || (['TV', 'Film', 'OVA', 'ONA', 'Special'].includes(n.format) ? n.format : 'TV');
+    const img = n.coverXL || n.cover || '';
+    const a = newAnime({ title: n.title, titleJp: n.titleJp || '', episodes: n.episodes || 0, year: n.year || '', type, genres: (n.genres || []).slice(0, 6), studio: n.studio || '', malId: n.idMal || null, alId: n.id || null, extId: n.key, synopsis: n.desc || '', cover: img, status });
+    if (status === 'watching') a.started = SN.todayKey();
+    save();
+    if (img && SN.isElectron) window.spirit.net.download(img, 'attachments/anime').then(p => { a.cover = p; save(); }).catch(() => { /* URL bleibt */ });
+    return a;
+  };
   async function fromApi(d) {
     const img = d.img;
     const a = newAnime({ title: d.title, titleJp: d.titleJp || '', episodes: d.episodes || 0, year: d.year || '', type: d.type || 'TV', genres: d.genres.slice(0, 6), studio: d.studio || '', malId: d.malId || null, extId: d.key, synopsis: d.synopsis || '', cover: img });
@@ -267,8 +281,10 @@
       }
       m.close(); SN.editor.open(a.note, { newTab: true });
     } });
+    const alId = a.alId || Number((/^al:(\d+)$/.exec(a.extId || '') || [])[1]) || null;
+    const infoBtn = (alId || a.malId) ? h('button.btn.small', { html: SN.icon('book', 14) + '<span>Infos & Ähnliche</span>', title: 'Handlung, Charaktere, Streaming & ähnliche Anime', onclick: () => { m.close(); SN.discover.info({ key: alId ? 'al:' + alId : 'mal:' + a.malId, id: alId, idMal: a.malId || null, title: a.title, titleEn: '', titleJp: a.titleJp || '', cover: cover(a), coverXL: cover(a), banner: '', format: a.type || '', episodes: a.episodes || 0, year: a.year || '', genres: [], desc: a.synopsis || '', score: 0 }); } }) : null;
     const body = h('div.anime-detail',
-      h('div.ad-left', coverEl, h('div.row', { style: { justifyContent: 'center', gap: '6px', marginTop: '10px', flexWrap: 'wrap' } }, favBtn, noteBtn),
+      h('div.ad-left', coverEl, h('div.row', { style: { justifyContent: 'center', gap: '6px', marginTop: '10px', flexWrap: 'wrap' } }, favBtn, noteBtn, infoBtn),
         a.synopsis ? h('details.ad-syn', h('summary', 'Handlung (Englisch)'), h('p', a.synopsis)) : null),
       h('div.ad-right',
         h('div.grid2', field('Titel', inp('title')), field('Japanischer Titel', inp('titleJp'))),
